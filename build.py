@@ -40,9 +40,22 @@ GEOCODE_CACHE_PATH = "geocode_cache.json"
 #          ※ ファイル名自体には都道府県情報が含まれていないため、
 #            新しい都道府県のCSVを追加する際は、必ず中身を一度確認してから
 #            このマッピングに正しい都道府県名を手動で追加すること。
+#
+#    👑 修正済み（2026-07-17）：ここに書くファイル名は「.」区切りでも「_」区切りでも
+#    どちらでも構わない。実際のcsv/フォルダ内のファイルとの照合時に、区切り文字の
+#    違いを無視して同一のものとして扱う仕組み（resolve_prefecture_files関数）を
+#    導入したため、表記ゆれによって「ファイルが見つからずスキップされる」事故を防げる。
 PREFECTURE_FILES = {
     "2026_6_1-31.csv": ("大阪府", "osaka"),
-    "2026_6_1-32.csv": ("滋賀県", "shiga"),
+
+    # 🔴 一時的に無効化（2026-07-17）：
+    # 「2026_6_1-32.csv」の中身を実際に検証したところ、571件中、滋賀県内の住所と
+    # 判定できたのはわずか3件（約0.5%）で、残りは大阪府（豊中市・堺市等、466件＝約82%）や
+    # 兵庫県・奈良県の住所が大半を占めていた。「滋賀県」として掲載するのは事実と異なり、
+    # 相談支援員が誤った都道府県の事業所に問い合わせてしまう危険があるため、
+    # 正しいデータに差し替えるか、正しい都道府県名を確認できるまで、このファイルは
+    # ビルド対象から一時的に除外する。
+    # "2026_6_1-32.csv": ("滋賀県", "shiga"),
 }
 
 # 国土地理院 ジオコーディングAPI（無料・APIキー不要）
@@ -226,6 +239,51 @@ def geocode_with_cache(address, cache):
 
 
 # ------------------------------------------------------------
+# 8-0. ファイル名の表記ゆれ吸収（. と _ の違いなどを無視して照合する）
+# ------------------------------------------------------------
+def normalize_filename_for_matching(filename):
+    """
+    ファイル名の「.」「_」「-」「半角スペース」の違いを無視して比較できるように
+    正規化する（拡張子は残す）。
+    例：'2026.6.1-31.csv' と '2026_6_1-31.csv' を同じものとして扱う。
+    """
+    stem, ext = os.path.splitext(filename)
+    normalized_stem = re.sub(r"[._\-\s]", "", stem).lower()
+    return normalized_stem + ext.lower()
+
+
+def resolve_prefecture_files():
+    """
+    PREFECTURE_FILES で定義したファイル名と、csv/フォルダ内に実際に存在する
+    ファイル名を、区切り文字の表記ゆれを無視して照合する。
+
+    これにより「登録した名前と実ファイル名が1文字でも違うとスキップされてしまう」
+    という事故を防ぐ（過去に実際発生した不具合の再発防止）。
+    """
+    resolved = {}
+
+    if not os.path.isdir(CSV_DIR):
+        print(f"  ⚠️ {CSV_DIR}フォルダ自体が見つかりません")
+        return resolved
+
+    actual_files = os.listdir(CSV_DIR)
+    normalized_to_actual = {normalize_filename_for_matching(f): f for f in actual_files}
+
+    for registered_name, value in PREFECTURE_FILES.items():
+        normalized_registered = normalize_filename_for_matching(registered_name)
+
+        if normalized_registered in normalized_to_actual:
+            actual_filename = normalized_to_actual[normalized_registered]
+            resolved[actual_filename] = value
+            if actual_filename != registered_name:
+                print(f"  ℹ️ 表記ゆれを吸収して照合しました：{registered_name} → 実ファイル {actual_filename}")
+        else:
+            print(f"  ⚠️ {registered_name} に一致するファイルが {CSV_DIR}/ 内に見つかりません（表記ゆれも考慮した上で未検出）")
+
+    return resolved
+
+
+# ------------------------------------------------------------
 # 8. 1事業所分のレコードを組み立てる
 # ------------------------------------------------------------
 def build_station_record(row, pref_name, cache):
@@ -283,7 +341,9 @@ def main():
         "total_count": 0,
     }
 
-    for filename, (pref_name, pref_slug) in PREFECTURE_FILES.items():
+    resolved_files = resolve_prefecture_files()
+
+    for filename, (pref_name, pref_slug) in resolved_files.items():
         csv_path = os.path.join(CSV_DIR, filename)
 
         if not os.path.exists(csv_path):

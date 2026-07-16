@@ -441,7 +441,7 @@ a{ color: var(--color-primary-dark); }
       <ul>
         <li><strong>同行援護</strong>：視覚障害により移動に著しい困難がある方が対象。国の基準に基づく障害福祉サービスで、全国どこでも一定の基準で利用できます。</li>
         <li><strong>行動援護</strong>：知的障害・精神障害により行動上著しい困難がある方が対象。こちらも国の基準に基づく障害福祉サービスです。</li>
-        <li><strong>移動支援</strong>：対象者の範囲や支給量の考え方は市区町村が individually 判断する、地域生活支援事業（任意事業）です。</li>
+        <li><strong>移動支援</strong>：対象者の範囲や支給量の考え方は市区町村が個別に判断する、地域生活支援事業（任意事業）です。</li>
       </ul>
       <p>
         利用者の障害特性によっては、同行援護・行動援護が優先的に案内される場合もあるため、複数の制度を組み合わせて検討することが実務上多くあります。
@@ -795,7 +795,7 @@ a{ color: var(--color-primary-dark); }
     if (userLocation){
       list = list.map(s => ({
         ...s,
-        _distance: (s.lat && s.lon) ? haversineKm(userLocation.lat, userLocation.lon, s.lat, s.lon) : null
+        _distance: (s.lat != null && s.lon != null) ? haversineKm(userLocation.lat, userLocation.lon, s.lat, s.lon) : null
       }));
       list.sort((a, b) => {
         if (a._distance === null && b._distance === null) return 0;
@@ -965,14 +965,8 @@ a{ color: var(--color-primary-dark); }
     }
     saveCandidates();
     updateFabCount();
-    refreshCandidateButtons();
+    renderNextPage2();
     renderDrawerViews();
-  }
-
-  function refreshCandidateButtons(){
-    document.querySelectorAll(".action-btn.candidate").forEach(btn => {
-      // カード再描画時に isAdded を反映しているため、ここでは件数のみ更新する
-    });
   }
 
   function removeCandidate(jigyoshoNo){
