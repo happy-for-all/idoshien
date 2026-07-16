@@ -1,0 +1,14 @@
+# ビルド出力（build.pyが毎回生成するため、Gitでは管理しない）
+dist/
+
+# Node.js関連（wranglerのインストール時に生成される）
+node_modules/
+.wrangler/
+
+# OS・エディタ関連
+.DS_Store
+Thumbs.db
+
+# Python関連
+__pycache__/
+*.pyc
