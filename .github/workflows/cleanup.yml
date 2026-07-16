@@ -1,0 +1,37 @@
+name: Cleanup old archive files (monthly, automatic)
+
+# ============================================================
+# 🚌 archive/ フォルダの古いバックアップを月1回自動削除する
+#
+# 現時点（CSV・JSONを毎回上書きする運用）では archive/ フォルダ自体を
+# 使っていないため、このワークフローを実行しても削除対象のファイルは
+# ありません（安全に空振りします）。将来、日付付きバックアップを
+# 保管する運用に変更した場合に備えた安全弁です。
+# ============================================================
+on:
+  schedule:
+    - cron: "0 15 1 * *"   # 毎月1日 深夜(JST 0:00)に自動実行
+  workflow_dispatch:        # 手動での即時実行もできるようにしておく
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run cleanup script
+        run: python3 cleanup_old_archives.py
+
+      - name: Commit changes if any files were deleted
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: archive/内の古いバックアップを自動削除"
+          git push
