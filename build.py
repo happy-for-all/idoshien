@@ -464,7 +464,7 @@ def main():
 
     # 👑 重要：CF Workerのassets配信は wrangler.json の "directory": "./dist"
     # 配下のファイルのみを対象とするため、index.html も必ずdist/にコピーする。
-    static_files_to_copy = ["index.html", "favicon.ico" "ads.txt"]
+    static_files_to_copy = ["index.html", "favicon.ico", "ads.txt"]
     for filename in static_files_to_copy:
         if os.path.exists(filename):
             shutil.copy(filename, os.path.join(OUTPUT_DIR, filename))
