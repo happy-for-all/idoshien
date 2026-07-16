@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ============================================================
+     公開前チェック：本番公開の直前に、この2行（noindexとcanonical）を
+     必ず正式なものに変更・削除すること。現時点は仮設置。
+     ============================================================ -->
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://idoshien.pray-power-is-god-and-cocoro.com/">
+
+<title>移動支援ナビ｜現在地・住所から探せる移動支援事業所検索</title>
+<meta name="description" content="移動支援の指定事業所を、現在地や利用者の住所から近い順に検索できるツールです。相談支援専門員の「探す・電話する・記録する・紹介する」をこの1画面で。">
+
+<!-- ファビコン：画像は後日差し替え予定。リンクタグのみ仮設置 -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     AdSense：ローダーは<head>に1回だけ。
+     ============================================================ -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2908004621823900" crossorigin="anonymous"></script>
+
+<style>
+/* ============================================================
+   1. デザイントークン（色・フォント・余白の基準値）
+   訪問看護ナビ＝セージグリーンに対し、こちらは「外出・お出かけ」を
+   連想させるスカイブルー＋元気なオレンジを採用し、シリーズ内で
+   視覚的に差別化している。
+   ============================================================ */
+:root{
+  --color-bg: #F2F8FB;
+  --color-surface: #FFFFFF;
+  --color-primary: #1D77A6;
+  --color-primary-dark: #145A80;
+  --color-accent: #F2994A;
+  --color-text: #22303A;
+  --color-text-muted: #63737F;
+  --color-border: #DCE7EE;
+
+  --tag-physical-bg:#E7F1FB;    --tag-physical-fg:#1D5F8A;    --tag-physical-bd:#9CC3E0;
+  --tag-intellectual-bg:#FDEFE2;--tag-intellectual-fg:#9A5B1E;--tag-intellectual-bd:#E9B57F;
+  --tag-mental-bg:#F1E9F7;      --tag-mental-fg:#6B4C93;      --tag-mental-bd:#B79AD1;
+  --tag-child-bg:#E8F6EF;       --tag-child-fg:#2E7D53;       --tag-child-bd:#95CBAE;
+
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --shadow-card: 0 2px 10px rgba(20,60,80,0.08);
+
+  --font-display: 'Zen Maru Gothic', sans-serif;
+  --font-body: 'Noto Sans JP', sans-serif;
+}
+
+*{ box-sizing: border-box; }
+
+body{
+  margin:0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  line-height: 1.7;
+}
+a{ color: var(--color-primary-dark); }
+
+/* ============================================================
+   2. ヘッダー・免責バナー
+   ============================================================ */
+.site-header{ padding: 28px 20px 18px; text-align: center; }
+.site-header h1{
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(22px, 4vw, 32px);
+  color: var(--color-primary-dark);
+  margin: 0 0 6px;
+}
+.site-header p.tagline{ color: var(--color-text-muted); margin: 0; font-size: 14px; }
+
+.disclaimer-banner{
+  max-width: 760px;
+  margin: 18px auto 0;
+  padding: 14px 18px;
+  background: #FFF3E6;
+  border: 1px solid #F0C896;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #6B4A23;
+}
+.disclaimer-banner strong{ color: #8A4E0E; }
+.disclaimer-banner p{ margin: 8px 0 0; }
+
+/* ============================================================
+   3. 検索エリア
+   ============================================================ */
+.search-panel{
+  max-width: 900px;
+  margin: 22px auto;
+  padding: 20px;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.locate-row{ display:flex; gap:10px; flex-wrap: wrap; align-items:center; margin-bottom: 12px; }
+.btn{
+  border:none; border-radius: var(--radius-pill); padding: 12px 22px;
+  font-family: var(--font-body); font-weight: 700; font-size: 15px;
+  cursor:pointer; transition: transform .1s ease;
+}
+.btn:active{ transform: scale(0.98); }
+.btn-primary{ background: var(--color-primary); color:#fff; }
+.btn-primary:hover{ background: var(--color-primary-dark); }
+.btn-outline{ background:#fff; border:1.5px solid var(--color-border); color: var(--color-text); }
+.btn-outline:hover{ border-color: var(--color-primary); }
+.btn-small{ padding: 7px 14px; font-size: 13px; }
+
+#locateStatus{ font-size: 13px; color: var(--color-text-muted); }
+
+.address-search-row{
+  display:flex; gap:8px; flex-wrap: wrap; align-items:center;
+  margin-bottom: 14px; padding: 10px 12px; background: #F8FBFD;
+  border: 1.5px dashed var(--color-border); border-radius: 10px;
+}
+.address-search-row input[type="text"]{
+  flex:1; min-width: 200px; padding: 9px 12px; border-radius: 8px;
+  border: 1.5px solid var(--color-border); font-family: var(--font-body); font-size: 14px;
+}
+.address-search-row .hint{ width:100%; font-size:12px; color: var(--color-text-muted); }
+
+.field-row{ display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.field-row select, .field-row input[type="text"]{
+  flex:1; min-width: 160px; padding: 10px 12px; border-radius: 10px;
+  border: 1.5px solid var(--color-border); font-family: var(--font-body); font-size: 15px;
+}
+
+.filter-group{ margin-bottom: 12px; }
+.filter-group .filter-label{ font-size: 13px; color: var(--color-text-muted); margin-bottom: 6px; font-weight:700; }
+.chip-list{ display:flex; flex-wrap: wrap; gap: 8px; }
+.chip{
+  display:inline-flex; align-items:center; gap:6px; padding: 7px 14px;
+  border-radius: var(--radius-pill); border: 1.5px solid var(--color-border);
+  background:#fff; font-size: 13px; cursor:pointer; user-select:none;
+}
+.chip input{ display:none; }
+.chip.checked{ background: var(--color-primary); border-color: var(--color-primary); color:#fff; }
+
+/* ============================================================
+   4. 結果エリア
+   ============================================================ */
+.results-wrap{ max-width: 900px; margin: 0 auto 60px; padding: 0 20px; }
+#regionHeading{
+  font-family: var(--font-display); color: var(--color-primary-dark);
+  font-size: 18px; margin: 0 0 6px;
+}
+.results-meta{
+  display:flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;
+  margin-bottom: 14px; color: var(--color-text-muted); font-size: 14px;
+}
+
+.station-card{
+  background: var(--color-surface); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card); padding: 18px 20px; margin-bottom: 14px;
+  border-left: 6px solid var(--color-border);
+}
+.station-card.tag-physical{ border-left-color: var(--tag-physical-bd); }
+.station-card.tag-intellectual{ border-left-color: var(--tag-intellectual-bd); }
+.station-card.tag-mental{ border-left-color: var(--tag-mental-bd); }
+.station-card.tag-child{ border-left-color: var(--tag-child-bd); }
+
+.card-top{ display:flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.card-name{ font-family: var(--font-display); font-weight: 700; font-size: 17px; margin: 0 0 4px; }
+.card-distance{ font-size: 13px; font-weight: 700; color: var(--color-primary-dark); white-space: nowrap; }
+
+.tag-badges{ display:flex; flex-wrap: wrap; gap:6px; margin: 8px 0 10px; }
+.tag-badge{ font-size: 12px; padding: 3px 10px; border-radius: var(--radius-pill); border: 1px solid; font-weight: 700; }
+.tag-badge.physical{ background: var(--tag-physical-bg); color: var(--tag-physical-fg); border-color: var(--tag-physical-bd); }
+.tag-badge.intellectual{ background: var(--tag-intellectual-bg); color: var(--tag-intellectual-fg); border-color: var(--tag-intellectual-bd); }
+.tag-badge.mental{ background: var(--tag-mental-bg); color: var(--tag-mental-fg); border-color: var(--tag-mental-bd); }
+.tag-badge.child{ background: var(--tag-child-bg); color: var(--tag-child-fg); border-color: var(--tag-child-bd); }
+
+.card-address{ font-size: 14px; color: var(--color-text); margin-bottom: 8px; display:flex; align-items:center; gap:6px; flex-wrap: wrap; }
+.card-meta-line{ font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
+
+.card-actions{ display:flex; flex-wrap: wrap; gap: 8px; }
+.action-btn{
+  display:inline-flex; align-items:center; gap:6px; padding: 8px 14px;
+  border-radius: var(--radius-pill); border: 1.5px solid var(--color-border);
+  background:#fff; font-size: 13px; font-weight: 700; text-decoration:none;
+  color: var(--color-text); cursor:pointer;
+}
+.action-btn.call{ background: var(--color-accent); border-color: var(--color-accent); color:#fff; }
+.action-btn.map{ background: var(--color-primary); border-color: var(--color-primary); color:#fff; }
+.action-btn.candidate.added{ background: var(--color-primary-dark); border-color: var(--color-primary-dark); color:#fff; }
+.action-btn.copy{ background:#fff; }
+.action-btn.copy.copied{ background:#E8F6EF; border-color:#95CBAE; }
+
+.load-more-wrap{ text-align:center; margin-top: 20px; }
+.empty-state, .loading-state{ text-align:center; padding: 40px 20px; color: var(--color-text-muted); }
+
+/* ============================================================
+   5. コラムセクション
+   ============================================================ */
+.seo-section{ max-width: 760px; margin: 0 auto 60px; padding: 0 20px; }
+.seo-section h2{ font-family: var(--font-display); color: var(--color-primary-dark); font-size: 20px; }
+.seo-item{ background: var(--color-surface); border-radius: 12px; margin-bottom: 10px; box-shadow: var(--shadow-card); overflow:hidden; }
+.seo-item summary{ padding: 14px 18px; font-weight: 700; cursor:pointer; list-style:none; }
+.seo-item summary::-webkit-details-marker{ display:none; }
+.seo-item summary::before{ content: "▸ "; color: var(--color-primary); }
+.seo-item[open] summary::before{ content: "▾ "; }
+.seo-item .seo-body{ padding: 0 18px 16px; font-size: 14px; color: var(--color-text-muted); }
+.seo-item .seo-body p{ margin: 0 0 12px; }
+.seo-item .seo-body ul{ margin: 0 0 12px; padding-left: 20px; }
+.seo-item .seo-body li{ margin-bottom: 6px; }
+.seo-item .seo-body strong{ color: var(--color-text); }
+
+/* ============================================================
+   6. フッター
+   ============================================================ */
+.site-footer{ text-align:center; padding: 30px 20px 50px; font-size: 12px; color: var(--color-text-muted); }
+
+@media (max-width: 480px){
+  .card-top{ flex-direction: column; }
+  .card-distance{ order:-1; }
+}
+
+/* ============================================================
+   7. 候補リスト・ドロワー・通話モード・印刷
+   ============================================================ */
+.candidate-fab{
+  position: fixed; right: 18px; bottom: 18px; z-index: 500;
+  background: var(--color-primary-dark); color:#fff; border:none;
+  border-radius: var(--radius-pill); padding: 14px 22px;
+  font-family: var(--font-body); font-weight: 700; font-size: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2); cursor:pointer;
+}
+
+.drawer-overlay{ position: fixed; inset: 0; background: rgba(15,30,40,0.45); z-index: 900; display:flex; justify-content:flex-end; }
+.drawer-overlay.hidden{ display:none; }
+.drawer-panel{ width: min(560px, 100%); height: 100%; background: var(--color-bg); overflow-y:auto; padding: 18px; }
+.drawer-header{ display:flex; justify-content: space-between; align-items:center; margin-bottom: 12px; }
+.drawer-header h2{ font-family: var(--font-display); color: var(--color-primary-dark); font-size: 18px; margin:0; }
+.drawer-close{ background:none; border:none; font-size: 22px; cursor:pointer; color: var(--color-text-muted); }
+
+.drawer-tabs{ display:flex; gap:8px; margin-bottom: 14px; }
+.drawer-tab{
+  flex:1; padding: 9px 10px; border-radius: 10px; border: 1.5px solid var(--color-border);
+  background:#fff; font-size: 13px; font-weight:700; cursor:pointer; text-align:center;
+}
+.drawer-tab.active{ background: var(--color-primary); border-color: var(--color-primary); color:#fff; }
+.drawer-view{ display:none; }
+.drawer-view.active{ display:block; }
+
+.drawer-actions-row{ display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+.client-group-heading{
+  font-family: var(--font-display); font-weight:700; font-size: 14px;
+  color: var(--color-primary-dark); margin: 16px 0 8px;
+}
+.client-group-heading:first-child{ margin-top: 0; }
+
+.candidate-row{ background: var(--color-surface); border-radius: 12px; box-shadow: var(--shadow-card); padding: 14px 16px; margin-bottom: 10px; }
+.candidate-row .cand-name{ font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.candidate-row .cand-address{ font-size: 13px; color: var(--color-text-muted); margin-bottom: 8px; }
+.client-label-input{
+  width: 100%; padding: 6px 10px; margin-bottom: 8px; border-radius: 8px;
+  border: 1.5px solid var(--color-border); font-family: var(--font-body); font-size: 13px;
+}
+.status-btns{ display:flex; gap:6px; margin-bottom: 6px; flex-wrap: wrap; }
+.status-btn{ font-size: 12px; padding: 5px 10px; border-radius: var(--radius-pill); border: 1.5px solid var(--color-border); background:#fff; cursor:pointer; }
+.status-btn.active-full{ background:#F8DADA; border-color:#D96A63; }
+.status-btn.active-maybe{ background:#FCEFCB; border-color:#E0B23C; }
+.status-btn.active-available{ background:#D9EFE2; border-color:#4E9B6E; }
+.status-btn.active-unknown{ background:#EDEBE3; border-color:#B9B4A4; }
+.status-updated-at{ font-size: 11px; color: var(--color-text-muted); margin-bottom: 8px; }
+
+.memo-template-row{ display:flex; gap:6px; flex-wrap: wrap; margin-bottom: 6px; }
+.template-btn{ font-size: 11px; padding: 4px 9px; border-radius: var(--radius-pill); border: 1.5px solid var(--color-border); background:#F8FBFD; cursor:pointer; }
+.memo-textarea{
+  width:100%; min-height: 60px; padding: 8px 10px; border-radius: 8px;
+  border: 1.5px solid var(--color-border); font-family: var(--font-body); font-size: 13px; margin-bottom: 6px;
+  resize: vertical;
+}
+.memo-insert-row{ display:flex; gap:6px; margin-bottom: 8px; }
+
+.candidate-row-actions{ display:flex; gap:8px; flex-wrap: wrap; }
+.mini-btn{ font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill); border: 1.5px solid var(--color-border); background:#fff; cursor:pointer; }
+.mini-btn.danger{ color:#9A3730; border-color:#D98A84; }
+.mini-btn.referred{ background: var(--color-accent); border-color: var(--color-accent); color:#fff; }
+.mini-btn.callmode{ background: var(--color-primary); border-color: var(--color-primary); color:#fff; }
+
+.history-row, .recent-row{
+  background: var(--color-surface); border-radius: 10px; box-shadow: var(--shadow-card);
+  padding: 10px 14px; margin-bottom: 8px; font-size: 13px;
+  display:flex; justify-content: space-between; align-items:center; gap:10px; flex-wrap: wrap;
+}
+
+/* 通話モード（電話をかけながら見る、必要最小限の情報だけの画面） */
+.callmode-overlay{
+  position: fixed; inset: 0; background: rgba(15,30,40,0.75); z-index: 1000;
+  display:flex; align-items:center; justify-content:center; padding: 20px;
+}
+.callmode-overlay.hidden{ display:none; }
+.callmode-card{
+  background:#fff; border-radius: 18px; padding: 26px 24px; max-width: 420px; width:100%;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.callmode-card h3{ font-family: var(--font-display); color: var(--color-primary-dark); font-size: 20px; margin: 0 0 12px; text-align:center; }
+.callmode-line{ font-size: 15px; margin-bottom: 10px; }
+.callmode-line .label{ font-size: 12px; color: var(--color-text-muted); display:block; }
+.callmode-tel{ font-size: 22px; font-weight: 700; color: var(--color-primary-dark); }
+.callmode-close-row{ text-align:center; margin-top: 16px; }
+
+#printArea{ display:none; }
+@media print{
+  body > *{ display: none !important; }
+  #printArea{ display: block !important; width: 100%; }
+  .print-card{ break-inside: avoid; page-break-inside: avoid; }
+  .print-card:nth-of-type(4n):not(:last-of-type){ break-after: page; page-break-after: always; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     ヘッダー
+     ============================================================ -->
+<header class="site-header">
+  <h1>🚌 移動支援ナビ</h1>
+  <p class="tagline">移動支援の指定事業所を、現在地・利用者の住所から近い順に検索</p>
+</header>
+
+<div class="disclaimer-banner">
+  <strong>ご利用にあたって：</strong>
+  掲載データは各都道府県が公表する「移動支援」指定事業所の一覧です。空き状況や対応内容は日々変わるため、必ず電話や公式サイトでご確認ください。
+  <p>
+    <strong>位置情報について：</strong>
+    現在地・住所検索で使用している距離計算は、国土地理院が提供するジオコーディング機能を利用しています。このサービスは東京大学の研究サービスを基にした準公式・実験的な位置づけであり、位置情報の精度や将来的な提供継続を保証するものではありません。
+  </p>
+  <p id="dataSourceNotice"></p>
+</div>
+
+<!-- ============================================================
+     検索パネル
+     ============================================================ -->
+<div class="search-panel">
+
+  <div class="locate-row">
+    <button id="btnLocate" class="btn btn-primary">📍 現在地から探す</button>
+    <span id="locateStatus"></span>
+  </div>
+
+  <!-- 任意の住所・駅名を基点にした検索（利用者の自宅などから探す） -->
+  <div class="address-search-row">
+    <input type="text" id="addressInput" placeholder="利用者の住所・最寄り駅名を入力（例：大阪市北区梅田）">
+    <button id="btnAddressSearch" class="btn btn-outline btn-small">🔎 この場所から近い順で探す</button>
+    <span class="hint">相談員さんの現在地ではなく、「利用者の自宅」を基点にしたいときにお使いください。</span>
+  </div>
+
+  <div class="field-row">
+    <select id="prefSelect">
+      <option value="">都道府県を選択（現在地・住所検索を使わない場合）</option>
+    </select>
+    <input type="text" id="keywordInput" placeholder="事業所名・住所・キーワードで検索">
+  </div>
+
+  <div class="filter-group">
+    <div class="filter-label">主たる対象者で絞る（各都道府県の公式データ）</div>
+    <div class="chip-list" id="tagFilters">
+      <label class="chip"><input type="checkbox" value="physical"><span>身体障害</span></label>
+      <label class="chip"><input type="checkbox" value="intellectual"><span>知的障害</span></label>
+      <label class="chip"><input type="checkbox" value="mental"><span>精神障害</span></label>
+      <label class="chip"><input type="checkbox" value="child"><span>障がい児</span></label>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     結果エリア
+     ============================================================ -->
+<div class="results-wrap">
+  <h2 id="regionHeading">移動支援 事業所一覧</h2>
+  <div class="results-meta">
+    <span id="resultsCount">現在地を取得するか、都道府県を選んでください。</span>
+    <span id="sortMode"></span>
+  </div>
+  <div id="resultsList"></div>
+  <div class="load-more-wrap">
+    <button id="btnLoadMore" class="btn btn-outline" style="display:none;">もっと見る</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     広告枠（本体はコメントアウトで仮配置。掲載したい場所にコピーして使う）
+     同じ data-ad-slot を1ページに重複設置しないこと。
+     ============================================================
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-2908004621823900"
+     data-ad-slot="5820083954"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+============================================================ -->
+
+<!-- ============================================================
+     コラムセクション（SEO記事）
+     ============================================================ -->
+<section class="seo-section">
+  <h2>移動支援について、もっと詳しく</h2>
+
+  <details class="seo-item">
+    <summary>移動支援とは？対象者・利用方法・料金の基本</summary>
+    <div class="seo-body">
+      <p>
+        移動支援は、屋外での移動が困難な障害のある方に対して、外出時の付き添いや移動の介助を行うサービスです。障害者総合支援法に基づく「地域生活支援事業」の1つで、市区町村が主体となって実施する<strong>市区町村の任意事業</strong>です。
+      </p>
+      <p><strong>知っておきたいポイント</strong></p>
+      <ul>
+        <li>同行援護・行動援護と異なり、国が定めた全国一律の基準ではなく、実施内容・支給量の考え方は市区町村ごとに異なります。</li>
+        <li>通院・買い物・余暇活動（映画・外食など）・冠婚葬祭など、社会生活上必要な外出全般で利用されるケースが多いです。</li>
+        <li>利用料は、お住まいの市区町村の所得区分に応じた自己負担額が設定されているのが一般的です。</li>
+      </ul>
+      <p>
+        制度の詳細や支給量の考え方は市区町村によって差があるため、まずはお住まいの市区町村の障害福祉窓口へご確認いただくことをおすすめします。
+      </p>
+    </div>
+  </details>
+
+  <details class="seo-item">
+    <summary>移動支援と同行援護・行動援護の違いとは？</summary>
+    <div class="seo-body">
+      <p>
+        「外出の支援」という点は共通していますが、根拠となる制度・対象者・提供主体が異なります。
+      </p>
+      <ul>
+        <li><strong>同行援護</strong>：視覚障害により移動に著しい困難がある方が対象。国の基準に基づく障害福祉サービスで、全国どこでも一定の基準で利用できます。</li>
+        <li><strong>行動援護</strong>：知的障害・精神障害により行動上著しい困難がある方が対象。こちらも国の基準に基づく障害福祉サービスです。</li>
+        <li><strong>移動支援</strong>：対象者の範囲や支給量の考え方は市区町村が individually 判断する、地域生活支援事業（任意事業）です。</li>
+      </ul>
+      <p>
+        利用者の障害特性によっては、同行援護・行動援護が優先的に案内される場合もあるため、複数の制度を組み合わせて検討することが実務上多くあります。
+      </p>
+    </div>
+  </details>
+
+  <details class="seo-item">
+    <summary>移動支援でできること・できないこと（通院・余暇・通学の壁）</summary>
+    <div class="seo-body">
+      <p>
+        移動支援の対象となる外出範囲は、市区町村ごとに定められた要綱によって差があります。一般的な傾向として、以下のような区分になっていることが多いです。
+      </p>
+      <ul>
+        <li><strong>対象になりやすい外出</strong>：買い物、余暇活動（映画・スポーツ観戦等）、冠婚葬祭、社会参加活動への参加</li>
+        <li><strong>市区町村によって扱いが分かれる外出</strong>：通院、通所・通学（原則対象外とする自治体が多いが、例外規定がある場合も）、通勤</li>
+      </ul>
+      <p>
+        通院や通学・通勤に近い外出を検討する際は、移動支援ではなく他の制度（重度訪問介護の通院等介助、通学支援施策など）が対象になる場合もあるため、事前に市区町村の窓口へ確認することが重要です。
+      </p>
+    </div>
+  </details>
+
+  <details class="seo-item">
+    <summary>【相談支援専門員向け】電話確認の際に聞いておきたいことチェックリスト</summary>
+    <div class="seo-body">
+      <p>候補の事業所へ連絡する前に、以下の項目を整理しておくと確認がスムーズになります。</p>
+      <ul>
+        <li>□ 現在の空き状況（新規受け入れ可否）</li>
+        <li>□ 対応可能な障害特性（身体・知的・精神・重複障害など）</li>
+        <li>□ 車椅子利用者への対応可否</li>
+        <li>□ 強度行動障害がある方への対応実績</li>
+        <li>□ 医療的ケアが必要な場合の対応可否</li>
+        <li>□ 対応可能な曜日・時間帯</li>
+        <li>□ 支給決定量に対する対応可否（希望する利用回数・時間に応じられるか）</li>
+      </ul>
+      <p>
+        これらは一般的な確認事項の例です。掲載データそのものにこれらの詳細情報は含まれていないため、必ず電話で直接ご確認ください。
+      </p>
+    </div>
+  </details>
+
+  <details class="seo-item">
+    <summary>よくある質問（Q&A）</summary>
+    <div class="seo-body">
+      <p><strong>Q. 移動支援は他の市区町村の事業所も利用できますか？</strong></p>
+      <p>A. 利用者が居住する市区町村の支給決定に基づくため、事業所の所在地に関わらず、利用者の市区町村が指定・契約している事業所であれば利用できる場合があります。詳細は市区町村窓口にご確認ください。</p>
+      <p><strong>Q. 掲載されている事業所は、必ず空きがありますか？</strong></p>
+      <p>A. 本サイトの掲載データは「指定を受けている事業所の一覧」であり、リアルタイムの空き状況は反映されていません。必ず電話でご確認ください。</p>
+    </div>
+  </details>
+
+</section>
+
+<footer class="site-footer">
+  <p id="footerManifestInfo">データ読み込み中…</p>
+  <p>データ出典：各都道府県公表の移動支援指定事業所一覧<br>位置情報：国土地理院 ジオコーディング機能（準公式・実験的サービス）</p>
+</footer>
+
+<!-- ============================================================
+     候補リストFAB・ドロワー
+     ============================================================ -->
+<button id="candidateFab" class="candidate-fab">📋 候補リスト（<span id="fabCount">0</span>）</button>
+
+<div id="drawerOverlay" class="drawer-overlay hidden">
+  <div class="drawer-panel">
+    <div class="drawer-header">
+      <h2>候補リスト・紹介履歴・最近見た事業所</h2>
+      <button id="drawerClose" class="drawer-close">✕</button>
+    </div>
+
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" data-tab="list">候補リスト</button>
+      <button class="drawer-tab" data-tab="history">紹介履歴</button>
+      <button class="drawer-tab" data-tab="recent">最近見た事業所</button>
+    </div>
+
+    <div class="drawer-actions-row">
+      <button id="btnPrint" class="btn btn-outline btn-small">🖨 印刷する（PDF保存も可）</button>
+      <button id="btnCsvExport" class="btn btn-outline btn-small">📄 CSV出力</button>
+      <button id="btnCopyAll" class="btn btn-outline btn-small">📝 候補をテキストでコピー</button>
+    </div>
+
+    <div id="viewList" class="drawer-view active"></div>
+    <div id="viewHistory" class="drawer-view"></div>
+    <div id="viewRecent" class="drawer-view"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     通話モード（電話をかけながら見る、最小限の情報画面）
+     ============================================================ -->
+<div id="callmodeOverlay" class="callmode-overlay hidden">
+  <div class="callmode-card">
+    <h3 id="callmodeName"></h3>
+    <div class="callmode-line"><span class="label">電話番号</span><a id="callmodeTel" class="callmode-tel" href="#"></a></div>
+    <div class="callmode-line"><span class="label">住所</span><span id="callmodeAddress"></span></div>
+    <div class="callmode-line"><span class="label">主たる対象者</span><span id="callmodeTags"></span></div>
+    <div class="callmode-line"><span class="label">メモ</span><span id="callmodeMemo"></span></div>
+    <div class="callmode-close-row">
+      <button id="btnCallmodeClose" class="btn btn-outline btn-small">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     印刷専用エリア
+     ============================================================ -->
+<div id="printArea"></div>
+
+<!-- ============================================================
+     スクリプト本体
+     ============================================================ -->
+<script>
+(function(){
+
+  // ------------------------------------------------------------
+  // 1. 設定
+  // ------------------------------------------------------------
+  const PAGE_SIZE = 20;
+  const GEOCODE_API_URL = "https://msearch.gsi.go.jp/address-search/AddressSearch";
+
+  const TAG_LABELS = { physical: "身体障害", intellectual: "知的障害", mental: "精神障害", child: "障がい児" };
+  const TAG_PRIORITY = ["physical", "intellectual", "mental", "child"];
+
+  const STATUS_LABELS = {
+    unknown: "⚪ 未確認", available: "🟢 空きあり", maybe: "🟡 応相談", full: "🔴 満床",
+  };
+
+  const MEMO_TEMPLATES = ["【空きあり】", "【折り返し】", "【要相談】", "【担当者不在】"];
+
+  // ------------------------------------------------------------
+  // 2. 状態管理
+  // ------------------------------------------------------------
+  let manifestData = null;
+  let allStations = [];        // 現在読み込まれている全事業所データ
+  let userLocation = null;     // {lat, lon} 現在地 または 住所検索の基点
+  let filteredSorted = [];
+  let renderedCount = 0;
+
+  // 👑 現状は都道府県2件（大阪府・滋賀県）程度の小規模データのため、
+  // 「現在地・住所検索」時は全都道府県のデータをまとめて読み込む簡易方式にしている。
+  // 将来47都道府県規模までデータが増えた場合は、訪問看護ナビと同様に
+  // 都道府県ごとの遅延読み込み・近い都道府県だけ読み込む方式へ切り替えること。
+  const prefectureDataCache = {};
+
+  // ------------------------------------------------------------
+  // 3. データ読み込み
+  // ------------------------------------------------------------
+  async function loadManifest(){
+    try{
+      const res = await fetch("data_manifest.json");
+      manifestData = await res.json();
+
+      document.getElementById("footerManifestInfo").textContent =
+        `${manifestData.csv_source}／掲載件数 ${manifestData.total_count}件`;
+
+      const names = Object.values(manifestData.prefectures).map(p => p.name).join("・");
+      document.getElementById("dataSourceNotice").textContent =
+        `※現在対応しているのは ${names} のみです。他の地域は準備が整い次第、順次追加予定です。`;
+
+      // 都道府県セレクトを、実際に読み込めるデータに合わせて動的に生成する
+      const select = document.getElementById("prefSelect");
+      Object.entries(manifestData.prefectures).forEach(([slug, info]) => {
+        const opt = document.createElement("option");
+        opt.value = slug;
+        opt.textContent = info.name;
+        select.appendChild(opt);
+      });
+    }catch(err){
+      console.error(err);
+      document.getElementById("resultsList").innerHTML =
+        `<div class="empty-state">データの読み込みに失敗しました。時間をおいて再度お試しください。</div>`;
+    }
+  }
+
+  async function loadPrefectureData(slug){
+    if (prefectureDataCache[slug]) return prefectureDataCache[slug];
+    const res = await fetch(`data_${slug}.json`);
+    const data = await res.json();
+    prefectureDataCache[slug] = data;
+    return data;
+  }
+
+  async function loadAllAvailableData(){
+    const slugs = Object.keys(manifestData.prefectures);
+    const dataSets = await Promise.all(slugs.map(loadPrefectureData));
+    return dataSets.flat();
+  }
+
+  // ------------------------------------------------------------
+  // 4. 距離計算（Haversine公式）
+  // ------------------------------------------------------------
+  function haversineKm(lat1, lon1, lat2, lon2){
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  // ------------------------------------------------------------
+  // 5. 現在地取得
+  // ------------------------------------------------------------
+  document.getElementById("btnLocate").addEventListener("click", () => {
+    const statusEl = document.getElementById("locateStatus");
+
+    if (!navigator.geolocation){
+      statusEl.textContent = "お使いの環境では現在地取得に対応していません。都道府県を選んでください。";
+      return;
+    }
+
+    statusEl.textContent = "現在地を取得しています…";
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        statusEl.textContent = "データを読み込んでいます…";
+        document.getElementById("prefSelect").value = "";
+
+        try{
+          allStations = await loadAllAvailableData();
+          statusEl.textContent = "現在地を取得しました。近い順に表示します。";
+          applyFiltersAndRender();
+        }catch(e){
+          console.error(e);
+          statusEl.textContent = "データの読み込みに失敗しました。時間をおいて再度お試しください。";
+        }
+      },
+      (err) => {
+        console.warn(err);
+        userLocation = null;
+        statusEl.textContent = "現在地を取得できませんでした。都道府県を選んで検索してください。";
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+  // ------------------------------------------------------------
+  // 6. 任意の住所・駅名を基点にした検索（利用者の自宅などから探す）
+  //    国土地理院のジオコーディングAPIを、この操作の時だけフロントから直接呼び出す
+  //    （build.py側のバッチ処理とは別の、利用者操作に応じた単発の呼び出し）
+  // ------------------------------------------------------------
+  document.getElementById("btnAddressSearch").addEventListener("click", async () => {
+    const address = document.getElementById("addressInput").value.trim();
+    const statusEl = document.getElementById("locateStatus");
+
+    if (!address){
+      statusEl.textContent = "住所または駅名を入力してください。";
+      return;
+    }
+
+    statusEl.textContent = "住所から位置を検索しています…";
+
+    try{
+      const url = `${GEOCODE_API_URL}?q=${encodeURIComponent(address)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data || data.length === 0){
+        statusEl.textContent = "その住所・駅名からは位置を特定できませんでした。表記を変えてお試しください。";
+        return;
+      }
+
+      const [lon, lat] = data[0].geometry.coordinates;
+      userLocation = { lat, lon };
+      document.getElementById("prefSelect").value = "";
+
+      statusEl.textContent = "データを読み込んでいます…";
+      allStations = await loadAllAvailableData();
+      statusEl.textContent = `「${address}」から近い順に表示します。`;
+      applyFiltersAndRender();
+    }catch(e){
+      console.error(e);
+      statusEl.textContent = "検索に失敗しました。時間をおいて再度お試しください。";
+    }
+  });
+
+  // ------------------------------------------------------------
+  // 7. フィルター・検索条件の変更を監視
+  // ------------------------------------------------------------
+  document.getElementById("prefSelect").addEventListener("change", async () => {
+    const slug = document.getElementById("prefSelect").value;
+    userLocation = null;
+    document.getElementById("locateStatus").textContent = "";
+    document.getElementById("addressInput").value = "";
+
+    if (!slug){
+      allStations = [];
+      document.getElementById("resultsList").innerHTML = "";
+      document.getElementById("resultsCount").textContent = "都道府県を選ぶか、現在地・住所から探してください。";
+      updateRegionHeading(null);
+      return;
+    }
+
+    document.getElementById("resultsCount").textContent = "データを読み込んでいます…";
+    try{
+      allStations = await loadPrefectureData(slug);
+      updateRegionHeading(manifestData.prefectures[slug].name);
+      applyFiltersAndRender();
+    }catch(e){
+      console.error(e);
+      document.getElementById("resultsList").innerHTML =
+        `<div class="empty-state">データの読み込みに失敗しました。時間をおいて再度お試しください。</div>`;
+    }
+  });
+
+  document.getElementById("keywordInput").addEventListener("input", debounce(applyFiltersAndRender, 250));
+  document.querySelectorAll('#tagFilters input')
+    .forEach(el => el.addEventListener("change", (e) => {
+      const chip = e.target.closest(".chip");
+      if (chip) chip.classList.toggle("checked", e.target.checked);
+      applyFiltersAndRender();
+    }));
+
+  function debounce(fn, delay){
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
+  }
+
+  // 地域SEO：選択中の都道府県に応じて見出しを動的に変える
+  function updateRegionHeading(prefName){
+    const el = document.getElementById("regionHeading");
+    el.textContent = prefName ? `${prefName}の移動支援事業所一覧` : "移動支援 事業所一覧";
+  }
+
+  // ------------------------------------------------------------
+  // 8. フィルタリング・ソート・描画
+  // ------------------------------------------------------------
+  function applyFiltersAndRender(){
+    if (allStations.length === 0) return;
+
+    const keyword = document.getElementById("keywordInput").value.trim();
+    const checkedTags = Array.from(document.querySelectorAll('#tagFilters input:checked')).map(i => i.value);
+
+    let list = allStations;
+
+    if (keyword){
+      list = list.filter(s =>
+        (s.name && s.name.includes(keyword)) || (s.address && s.address.includes(keyword))
+      );
+    }
+
+    if (checkedTags.length > 0){
+      list = list.filter(s => checkedTags.some(tag => s.target_tags[tag]));
+    }
+
+    if (userLocation){
+      list = list.map(s => ({
+        ...s,
+        _distance: (s.lat && s.lon) ? haversineKm(userLocation.lat, userLocation.lon, s.lat, s.lon) : null
+      }));
+      list.sort((a, b) => {
+        if (a._distance === null && b._distance === null) return 0;
+        if (a._distance === null) return 1;
+        if (b._distance === null) return -1;
+        return a._distance - b._distance;
+      });
+      document.getElementById("sortMode").textContent = "近い順に表示中";
+    } else {
+      document.getElementById("sortMode").textContent = "";
+    }
+
+    filteredSorted = list;
+    renderedCount = 0;
+    document.getElementById("resultsList").innerHTML = "";
+    document.getElementById("resultsCount").textContent = `${filteredSorted.length}件が該当しました`;
+    renderNextPage();
+  }
+
+  // ------------------------------------------------------------
+  // 9. カードの描画（ページング対応）
+  // ------------------------------------------------------------
+  function renderNextPage(){
+    const listEl = document.getElementById("resultsList");
+    const next = filteredSorted.slice(renderedCount, renderedCount + PAGE_SIZE);
+
+    if (renderedCount === 0 && next.length === 0){
+      listEl.innerHTML = `<div class="empty-state">条件に合う事業所が見つかりませんでした。条件を変えてお試しください。</div>`;
+    }
+
+    next.forEach(station => listEl.insertAdjacentHTML("beforeend", renderCard(station)));
+    renderedCount += next.length;
+
+    const moreBtn = document.getElementById("btnLoadMore");
+    moreBtn.style.display = (renderedCount < filteredSorted.length) ? "inline-block" : "none";
+  }
+  document.getElementById("btnLoadMore").addEventListener("click", renderNextPage);
+
+  function renderCard(s){
+    const primaryTag = TAG_PRIORITY.find(t => s.target_tags[t]);
+    const cardClass = primaryTag ? `tag-${primaryTag}` : "";
+
+    const tagBadges = TAG_PRIORITY.filter(t => s.target_tags[t])
+      .map(t => `<span class="tag-badge ${t}">${TAG_LABELS[t]}</span>`).join("");
+
+    const distanceHtml = (s._distance !== undefined && s._distance !== null)
+      ? `<span class="card-distance">📍 約${s._distance.toFixed(1)}km</span>` : "";
+
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address || s.name)}`;
+    const searchByNameUrl = `https://www.google.com/search?q=${encodeURIComponent(s.name + " " + (s.prefecture||""))}`;
+
+    const telHtml = s.tel_clean
+      ? `<a class="action-btn call" href="tel:${s.tel_clean}">📞 ${escapeHtml(s.tel)}</a>` : "";
+
+    const isAdded = candidates.some(c => c.jigyosho_no === s.jigyosho_no);
+    const candidateBtnHtml =
+      `<button class="action-btn candidate${isAdded ? " added" : ""}" onclick="window.__idoshien.toggleCandidate('${escapeAttr(s.jigyosho_no)}')">
+        ${isAdded ? "✓ 候補に追加済み" : "📋 候補に追加"}
+      </button>`;
+
+    return `
+      <div class="station-card ${cardClass}" onclick="window.__idoshien.recordViewed('${escapeAttr(s.jigyosho_no)}')">
+        <div class="card-top">
+          <h3 class="card-name">${escapeHtml(s.name)}</h3>
+          ${distanceHtml}
+        </div>
+        <div class="tag-badges">${tagBadges}</div>
+        <div class="card-address">
+          📍 ${escapeHtml(s.address)}
+          <button class="action-btn copy btn-small" onclick="event.stopPropagation(); window.__idoshien.copyText(this, '${escapeAttr(s.address)}')">📝住所</button>
+        </div>
+        <div class="card-meta-line">法人：${escapeHtml(s.corporation_name || "情報なし")}／指定日：${escapeHtml(s.designated_date || "不明")}</div>
+        <div class="card-actions" onclick="event.stopPropagation()">
+          ${telHtml}
+          ${s.tel ? `<button class="action-btn copy" onclick="window.__idoshien.copyText(this, '${escapeAttr(s.tel)}')">📝番号</button>` : ""}
+          <button class="action-btn copy" onclick="window.__idoshien.copyText(this, '${escapeAttr(s.name)}')">📝名称</button>
+          <a class="action-btn map" href="${mapUrl}" target="_blank" rel="noopener">🗺 ルート案内</a>
+          <a class="action-btn" href="${searchByNameUrl}" target="_blank" rel="noopener">🔎 事業所名で検索</a>
+          ${candidateBtnHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(str){
+    if (!str) return "";
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  // ------------------------------------------------------------
+  // 10. 初期化
+  // ------------------------------------------------------------
+  loadManifest();
+
+  // ============================================================
+  // 11. 候補リスト・電話ステータス・紹介履歴・最近見た事業所
+  //     すべてlocalStorageのみで完結し、サーバーへは一切送信しない。
+  // ============================================================
+  const CANDIDATES_KEY = "idoshien_candidates";
+  const HISTORY_KEY = "idoshien_referral_history";
+  const RECENT_KEY = "idoshien_recent_viewed";
+  const RECENT_MAX = 15;
+
+  function loadFromStorage(key){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ console.warn(`localStorageの読み込みに失敗しました（${key}）`, e); return []; }
+  }
+  function saveToStorage(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); }
+    catch(e){ console.warn(`localStorageの保存に失敗しました（${key}）`, e); }
+  }
+
+  let candidates = loadFromStorage(CANDIDATES_KEY);
+  let referralHistory = loadFromStorage(HISTORY_KEY);
+  let recentViewed = loadFromStorage(RECENT_KEY);
+
+  function saveCandidates(){ saveToStorage(CANDIDATES_KEY, candidates); }
+  function saveHistory(){ saveToStorage(HISTORY_KEY, referralHistory); }
+  function saveRecent(){ saveToStorage(RECENT_KEY, recentViewed); }
+
+  // ---- 最後に見た事業所 ----
+  function recordViewed(jigyoshoNo){
+    const station = allStations.find(s => s.jigyosho_no === jigyoshoNo);
+    if (!station) return;
+    recentViewed = recentViewed.filter(r => r.jigyosho_no !== jigyoshoNo);
+    recentViewed.unshift({
+      jigyosho_no: station.jigyosho_no, name: station.name, address: station.address,
+      tel: station.tel, tel_clean: station.tel_clean, viewedAt: new Date().toLocaleString("ja-JP"),
+    });
+    recentViewed = recentViewed.slice(0, RECENT_MAX);
+    saveRecent();
+  }
+
+  // ---- ワンクリックコピー ----
+  function copyText(btn, text){
+    const doCopy = () => {
+      const original = btn.textContent;
+      btn.classList.add("copied");
+      btn.textContent = "✓コピー済";
+      setTimeout(() => { btn.classList.remove("copied"); btn.textContent = original; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(doCopy).catch(() => alert("コピーに失敗しました。手動でコピーしてください：\n" + text));
+    } else {
+      alert("お使いの環境ではコピー機能が使えません。手動でコピーしてください：\n" + text);
+    }
+  }
+
+  // ---- 候補リスト ----
+  function toggleCandidate(jigyoshoNo){
+    const idx = candidates.findIndex(c => c.jigyosho_no === jigyoshoNo);
+    if (idx >= 0){
+      candidates.splice(idx, 1);
+    } else {
+      const station = allStations.find(s => s.jigyosho_no === jigyoshoNo);
+      if (!station) return;
+      candidates.push({
+        jigyosho_no: station.jigyosho_no, name: station.name, address: station.address,
+        tel: station.tel, tel_clean: station.tel_clean, target_tags: station.target_tags,
+        designated_date: station.designated_date,
+        status: "unknown", statusUpdatedAt: "", clientLabel: "", memo: "",
+        addedAt: new Date().toISOString(),
+      });
+    }
+    saveCandidates();
+    updateFabCount();
+    refreshCandidateButtons();
+    renderDrawerViews();
+  }
+
+  function refreshCandidateButtons(){
+    document.querySelectorAll(".action-btn.candidate").forEach(btn => {
+      // カード再描画時に isAdded を反映しているため、ここでは件数のみ更新する
+    });
+  }
+
+  function removeCandidate(jigyoshoNo){
+    candidates = candidates.filter(c => c.jigyosho_no !== jigyoshoNo);
+    saveCandidates(); updateFabCount(); renderNextPage2(); renderDrawerViews();
+  }
+  function renderNextPage2(){
+    // 候補ボタンの表示状態を更新するため、現在表示中のページを再描画する
+    document.getElementById("resultsList").innerHTML = "";
+    renderedCount = 0;
+    renderNextPage();
+  }
+
+  function setCandidateStatus(jigyoshoNo, status){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (c){
+      c.status = status;
+      c.statusUpdatedAt = new Date().toLocaleString("ja-JP");
+      saveCandidates(); renderDrawerViews();
+    }
+  }
+  function setCandidateClientLabel(jigyoshoNo, label){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (c){ c.clientLabel = label; saveCandidates(); renderDrawerViews(); }
+  }
+  function setCandidateMemo(jigyoshoNo, memo){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (c){ c.memo = memo; saveCandidates(); }
+  }
+  function insertMemoTemplate(jigyoshoNo, template){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (!c) return;
+    c.memo = (c.memo ? c.memo + "\n" : "") + template + " ";
+    saveCandidates(); renderDrawerViews();
+  }
+  function insertMemoTimestamp(jigyoshoNo){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (!c) return;
+    const now = new Date();
+    const stamp = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")} - `;
+    c.memo = (c.memo ? c.memo + "\n" : "") + stamp;
+    saveCandidates(); renderDrawerViews();
+  }
+
+  function markAsReferred(jigyoshoNo){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (!c) return;
+    const clientLabel = window.prompt("どなたの候補として紹介しましたか？（任意・例：Aさん）", c.clientLabel || "") || "";
+    referralHistory.unshift({
+      jigyosho_no: c.jigyosho_no, name: c.name, clientLabel,
+      referredAt: new Date().toLocaleString("ja-JP"),
+    });
+    saveHistory(); renderDrawerViews();
+  }
+  function removeHistoryEntry(index){ referralHistory.splice(index, 1); saveHistory(); renderDrawerViews(); }
+  function removeRecentEntry(index){ recentViewed.splice(index, 1); saveRecent(); renderDrawerViews(); }
+
+  function updateFabCount(){ document.getElementById("fabCount").textContent = candidates.length; }
+
+  const drawerOverlay = document.getElementById("drawerOverlay");
+  document.getElementById("candidateFab").addEventListener("click", () => {
+    drawerOverlay.classList.remove("hidden"); renderDrawerViews();
+  });
+  document.getElementById("drawerClose").addEventListener("click", () => drawerOverlay.classList.add("hidden"));
+  drawerOverlay.addEventListener("click", (e) => { if (e.target === drawerOverlay) drawerOverlay.classList.add("hidden"); });
+
+  document.querySelectorAll(".drawer-tab").forEach(tabBtn => {
+    tabBtn.addEventListener("click", () => {
+      document.querySelectorAll(".drawer-tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".drawer-view").forEach(v => v.classList.remove("active"));
+      tabBtn.classList.add("active");
+      const tabName = tabBtn.getAttribute("data-tab");
+      document.getElementById(`view${tabName.charAt(0).toUpperCase()}${tabName.slice(1)}`).classList.add("active");
+    });
+  });
+
+  function renderDrawerViews(){ renderCandidateListView(); renderHistoryView(); renderRecentView(); }
+
+  function tagLine(tags){
+    return TAG_PRIORITY.filter(t => tags && tags[t]).map(t => TAG_LABELS[t]).join("・") || "情報なし";
+  }
+
+  function renderCandidateListView(){
+    const el = document.getElementById("viewList");
+    if (candidates.length === 0){
+      el.innerHTML = `<div class="empty-state">まだ候補がありません。検索結果の「📋 候補に追加」から追加してください。</div>`;
+      return;
+    }
+
+    // 利用者名ラベルで軽くグループ表示する（「未分類」はラベル未入力分）
+    const groups = {};
+    candidates.forEach(c => {
+      const key = c.clientLabel || "（利用者名未入力）";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(c);
+    });
+
+    el.innerHTML = Object.entries(groups).map(([label, list]) => `
+      <div class="client-group-heading">${escapeHtml(label)}：候補${list.length}件</div>
+      ${list.map(c => renderCandidateRow(c)).join("")}
+    `).join("");
+  }
+
+  function renderCandidateRow(c){
+    const statusBtns = Object.keys(STATUS_LABELS).map(key =>
+      `<button class="status-btn ${c.status === key ? "active-" + key : ""}" onclick="window.__idoshien.setStatus('${escapeAttr(c.jigyosho_no)}','${key}')">${STATUS_LABELS[key]}</button>`
+    ).join("");
+
+    const templateBtns = MEMO_TEMPLATES.map(t =>
+      `<button class="template-btn" onclick="window.__idoshien.insertTemplate('${escapeAttr(c.jigyosho_no)}', '${escapeAttr(t)}')">${escapeHtml(t)}</button>`
+    ).join("");
+
+    return `
+      <div class="candidate-row">
+        <div class="cand-name">${escapeHtml(c.name)}</div>
+        <div class="cand-address">📍 ${escapeHtml(c.address)}</div>
+        <div class="card-meta-line">対象：${tagLine(c.target_tags)}</div>
+        <input type="text" class="client-label-input" placeholder="利用者名（任意・例：Aさん）"
+          value="${escapeAttr(c.clientLabel || '')}"
+          onchange="window.__idoshien.setClientLabel('${escapeAttr(c.jigyosho_no)}', this.value)">
+        <div class="status-btns">${statusBtns}</div>
+        ${c.statusUpdatedAt ? `<div class="status-updated-at">最終確認：${escapeHtml(c.statusUpdatedAt)}</div>` : ""}
+        <div class="memo-template-row">${templateBtns}</div>
+        <div class="memo-insert-row">
+          <button class="mini-btn" onclick="window.__idoshien.insertTimestamp('${escapeAttr(c.jigyosho_no)}')">⌚ 日時を挿入</button>
+        </div>
+        <textarea class="memo-textarea" placeholder="電話で聞いた内容を自由にメモ"
+          onchange="window.__idoshien.setMemo('${escapeAttr(c.jigyosho_no)}', this.value)">${escapeHtml(c.memo || '')}</textarea>
+        <div class="candidate-row-actions">
+          ${c.tel ? `<a class="mini-btn" href="tel:${c.tel_clean || ''}">📞 電話</a>` : ""}
+          <button class="mini-btn callmode" onclick="window.__idoshien.openCallmode('${escapeAttr(c.jigyosho_no)}')">📴 通話モード</button>
+          <button class="mini-btn referred" onclick="window.__idoshien.markReferred('${escapeAttr(c.jigyosho_no)}')">✅ 紹介済みにする</button>
+          <button class="mini-btn danger" onclick="window.__idoshien.removeCandidate('${escapeAttr(c.jigyosho_no)}')">🗑 削除</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHistoryView(){
+    const el = document.getElementById("viewHistory");
+    if (referralHistory.length === 0){
+      el.innerHTML = `<div class="empty-state">紹介履歴はまだありません。候補リストから「✅ 紹介済みにする」を押すと記録されます。</div>`;
+      return;
+    }
+    el.innerHTML = referralHistory.map((h, idx) => `
+      <div class="history-row">
+        <span>${escapeHtml(h.referredAt)}｜${escapeHtml(h.clientLabel || "（利用者名未記入）")}｜${escapeHtml(h.name)}</span>
+        <button class="mini-btn danger" onclick="window.__idoshien.removeHistory(${idx})">削除</button>
+      </div>
+    `).join("");
+  }
+
+  function renderRecentView(){
+    const el = document.getElementById("viewRecent");
+    if (recentViewed.length === 0){
+      el.innerHTML = `<div class="empty-state">まだ閲覧履歴がありません。検索結果のカードをクリックすると記録されます。</div>`;
+      return;
+    }
+    el.innerHTML = recentViewed.map((r, idx) => `
+      <div class="recent-row">
+        <span>${escapeHtml(r.viewedAt)}｜${escapeHtml(r.name)}</span>
+        <span>
+          ${r.tel_clean ? `<a class="mini-btn" href="tel:${r.tel_clean}">📞</a>` : ""}
+          <button class="mini-btn danger" onclick="window.__idoshien.removeRecent(${idx})">削除</button>
+        </span>
+      </div>
+    `).join("");
+  }
+
+  // ---- 通話モード（電話をかけながら見る、最小限の情報画面） ----
+  const callmodeOverlay = document.getElementById("callmodeOverlay");
+  function openCallmode(jigyoshoNo){
+    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+    if (!c) return;
+    document.getElementById("callmodeName").textContent = c.name;
+    const telEl = document.getElementById("callmodeTel");
+    telEl.textContent = c.tel || "情報なし";
+    telEl.href = c.tel_clean ? `tel:${c.tel_clean}` : "#";
+    document.getElementById("callmodeAddress").textContent = c.address;
+    document.getElementById("callmodeTags").textContent = tagLine(c.target_tags);
+    document.getElementById("callmodeMemo").textContent = c.memo || "（メモなし）";
+    callmodeOverlay.classList.remove("hidden");
+  }
+  document.getElementById("btnCallmodeClose").addEventListener("click", () => callmodeOverlay.classList.add("hidden"));
+  callmodeOverlay.addEventListener("click", (e) => { if (e.target === callmodeOverlay) callmodeOverlay.classList.add("hidden"); });
+
+  // ---- 印刷 ----
+  document.getElementById("btnPrint").addEventListener("click", () => {
+    const printArea = document.getElementById("printArea");
+    if (candidates.length === 0){ alert("候補リストが空です。印刷する前に候補を追加してください。"); return; }
+
+    printArea.innerHTML = `
+      <h1 style="font-family:sans-serif;">移動支援 候補リスト（${new Date().toLocaleDateString("ja-JP")}時点）</h1>
+      ${candidates.map(c => `
+        <div class="print-card" style="border:1px solid #999; border-radius:8px; padding:12px 16px; margin-bottom:10px; font-family:sans-serif;">
+          <div style="font-weight:bold; font-size:16px;">${escapeHtml(c.name)}</div>
+          ${c.clientLabel ? `<div>利用者：${escapeHtml(c.clientLabel)}</div>` : ""}
+          <div>住所：${escapeHtml(c.address)}</div>
+          <div>電話：${escapeHtml(c.tel || "情報なし")}</div>
+          <div>主たる対象者：${escapeHtml(tagLine(c.target_tags))}</div>
+          <div>電話ステータス：${STATUS_LABELS[c.status] || STATUS_LABELS.unknown}${c.statusUpdatedAt ? `（最終確認：${escapeHtml(c.statusUpdatedAt)}）` : ""}</div>
+          ${c.memo ? `<div>メモ：${escapeHtml(c.memo).replace(/\n/g,"<br>")}</div>` : ""}
+        </div>
+      `).join("")}
+      <p style="font-size:11px; color:#555; font-family:sans-serif;">
+        ※掲載データは各都道府県公表の指定事業所一覧です。空き状況は必ず電話でご確認ください。
+      </p>
+    `;
+    window.print();
+  });
+
+  // ---- CSV出力 ----
+  document.getElementById("btnCsvExport").addEventListener("click", () => {
+    if (candidates.length === 0){ alert("候補リストが空です。"); return; }
+    const header = ["事業所名","住所","電話番号","主たる対象者","指定日","ステータス","最終確認日時","利用者名","メモ"];
+    const rows = candidates.map(c => [
+      c.name, c.address, c.tel || "", tagLine(c.target_tags), c.designated_date || "",
+      STATUS_LABELS[c.status] || STATUS_LABELS.unknown, c.statusUpdatedAt || "", c.clientLabel || "", (c.memo || "").replace(/\n/g, " / "),
+    ]);
+    const csvBody = [header, ...rows].map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvBody], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `移動支援_候補リスト_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ---- 候補リスト丸ごとのテキストコピー ----
+  document.getElementById("btnCopyAll").addEventListener("click", () => {
+    if (candidates.length === 0){ alert("候補リストが空です。"); return; }
+    const text = "【移動支援 候補】\n" + candidates.map((c, i) => (
+      `${i+1}. ${c.name}（${c.address}）\n` +
+      `   電話：${c.tel || "情報なし"}\n` +
+      `   ステータス：${STATUS_LABELS[c.status] || STATUS_LABELS.unknown}\n` +
+      (c.memo ? `   メモ：${c.memo.replace(/\n/g, " / ")}\n` : "")
+    )).join("\n");
+
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(() => alert("候補リストをコピーしました。")).catch(() => alert(text));
+    } else {
+      alert(text);
+    }
+  });
+
+  // 外部（HTMLのonclick属性）から呼べるように公開する
+  window.__idoshien = {
+    toggleCandidate, removeCandidate, setStatus: setCandidateStatus,
+    setClientLabel: setCandidateClientLabel, setMemo: setCandidateMemo,
+    insertTemplate: insertMemoTemplate, insertTimestamp: insertMemoTimestamp,
+    markReferred: markAsReferred, removeHistory: removeHistoryEntry,
+    removeRecent: removeRecentEntry, recordViewed, copyText, openCallmode,
+  };
+
+  updateFabCount();
+
+})();
+</script>
+
+</body>
+</html>
