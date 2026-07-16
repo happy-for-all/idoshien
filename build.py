@@ -36,7 +36,7 @@ GEOCODE_CACHE_PATH = "geocode_cache.json"
 #    キー：csv/フォルダ内のファイル名（ダウンロード時のファイル名をそのまま使う。
 #          リネームすると「どのファイルがどこの都道府県か」が分からなくなり、
 #          後から混乱する原因になるため、ファイル名は加工しない方針にした）
-#    値　：(都道府県の正式名称, スラッグ（英語表記）)
+#    値　：(都道府県の正式名称, スラッグ（英語表記）, 大阪府市町村フィルタが必要か)
 #          ※ ファイル名自体には都道府県情報が含まれていないため、
 #            新しい都道府県のCSVを追加する際は、必ず中身を一度確認してから
 #            このマッピングに正しい都道府県名を手動で追加すること。
@@ -45,18 +45,34 @@ GEOCODE_CACHE_PATH = "geocode_cache.json"
 #    どちらでも構わない。実際のcsv/フォルダ内のファイルとの照合時に、区切り文字の
 #    違いを無視して同一のものとして扱う仕組み（resolve_prefecture_files関数）を
 #    導入したため、表記ゆれによって「ファイルが見つからずスキップされる」事故を防げる。
+#
+#    👑 修正済み（2026-07-17）：ちゃろさんに確認したところ、CSVは「大阪市」と
+#    「大阪市以外の市町村」の2種類で構成されていることが判明した。
+#    「2026_6_1-31.csv」＝大阪市、「2026_6_1-32.csv」＝大阪市以外の市町村。
+#    どちらも同じ「大阪府（osaka）」として1つのデータにまとめて出力する
+#    （利用者から見て「大阪府」という1つの地域として検索できるようにするため）。
+#    ただし「大阪市以外」側には、他府県（兵庫県・奈良県等）の住所が約20%混入している
+#    ことが実データ検証で判明したため、大阪府の正式な市町村名と照合し、
+#    該当しない行は自動的に除外する（3番目の True フラグで指定）。
 PREFECTURE_FILES = {
-    "2026_6_1-31.csv": ("大阪府", "osaka"),
-
-    # 🔴 一時的に無効化（2026-07-17）：
-    # 「2026_6_1-32.csv」の中身を実際に検証したところ、571件中、滋賀県内の住所と
-    # 判定できたのはわずか3件（約0.5%）で、残りは大阪府（豊中市・堺市等、466件＝約82%）や
-    # 兵庫県・奈良県の住所が大半を占めていた。「滋賀県」として掲載するのは事実と異なり、
-    # 相談支援員が誤った都道府県の事業所に問い合わせてしまう危険があるため、
-    # 正しいデータに差し替えるか、正しい都道府県名を確認できるまで、このファイルは
-    # ビルド対象から一時的に除外する。
-    # "2026_6_1-32.csv": ("滋賀県", "shiga"),
+    "2026_6_1-31.csv": ("大阪府", "osaka", False),
+    "2026_6_1-32.csv": ("大阪府", "osaka", True),
 }
+
+# 大阪府の正式な市町村一覧（33市・9町・1村、計43市町村）。
+# 「大阪市以外」のCSVに混入している他府県の住所を除外するための照合リストとして使う。
+# 出典：大阪府公式サイト（府内市町村の概要）
+OSAKA_MUNICIPALITY_PREFIXES = [
+    # 33市
+    "大阪市", "堺市", "岸和田市", "豊中市", "池田市", "吹田市", "泉大津市", "高槻市", "貝塚市", "守口市",
+    "枚方市", "茨木市", "八尾市", "泉佐野市", "富田林市", "寝屋川市", "河内長野市", "松原市", "大東市", "和泉市",
+    "箕面市", "柏原市", "羽曳野市", "門真市", "摂津市", "高石市", "藤井寺市", "東大阪市", "泉南市", "四條畷市",
+    "交野市", "大阪狭山市", "阪南市",
+    # 9町・1村（郡名付きで住所に現れるため、郡名込みで登録する）
+    "三島郡島本町", "豊能郡豊能町", "豊能郡能勢町", "泉北郡忠岡町",
+    "泉南郡熊取町", "泉南郡田尻町", "泉南郡岬町",
+    "南河内郡太子町", "南河内郡河南町", "南河内郡千早赤阪村",
+]
 
 # 国土地理院 ジオコーディングAPI（無料・APIキー不要）
 # 👑 準公式・実験的サービスという位置づけのため、
@@ -284,6 +300,29 @@ def resolve_prefecture_files():
 
 
 # ------------------------------------------------------------
+# 8-1. 「大阪市以外」CSVに混入した他府県住所の除外
+# ------------------------------------------------------------
+def filter_to_osaka_municipalities(df):
+    """
+    住所が大阪府の正式な市町村名（OSAKA_MUNICIPALITY_PREFIXES）で
+    始まっている行だけを残し、それ以外（兵庫県・奈良県・滋賀県など、
+    誤って混入したと見られる行）を除外する。
+
+    戻り値：(除外後のDataFrame, 除外した件数, 除外した住所のサンプル最大5件)
+    """
+    def is_osaka_address(address):
+        if not isinstance(address, str):
+            return False
+        return any(address.startswith(prefix) for prefix in OSAKA_MUNICIPALITY_PREFIXES)
+
+    mask = df["事業所所在地"].apply(is_osaka_address)
+    excluded_samples = df.loc[~mask, "事業所所在地"].head(5).tolist()
+    excluded_count = int((~mask).sum())
+
+    return df[mask].reset_index(drop=True), excluded_count, excluded_samples
+
+
+# ------------------------------------------------------------
 # 8. 1事業所分のレコードを組み立てる
 # ------------------------------------------------------------
 def build_station_record(row, pref_name, cache):
@@ -343,15 +382,26 @@ def main():
 
     resolved_files = resolve_prefecture_files()
 
-    for filename, (pref_name, pref_slug) in resolved_files.items():
+    # 👑 同じスラッグ（例：osaka）を持つ複数のCSVを1つのデータにまとめるため、
+    # スラッグ単位でレコードを集約してからJSONに出力する設計にしている。
+    prefecture_records = {}   # slug -> {"name": pref_name, "records": [...]}
+
+    for filename, (pref_name, pref_slug, needs_osaka_filter) in resolved_files.items():
         csv_path = os.path.join(CSV_DIR, filename)
 
         if not os.path.exists(csv_path):
-            print(f"  ⚠️ {csv_path} が見つからないため、{pref_name}をスキップしました")
+            print(f"  ⚠️ {csv_path} が見つからないため、{pref_name}（{filename}）をスキップしました")
             continue
 
         df = load_csv_with_encoding_fallback(csv_path)
-        print(f"{pref_name}：CSV読み込み完了（{len(df)}件）")
+        print(f"{pref_name}／{filename}：CSV読み込み完了（{len(df)}件）")
+
+        if needs_osaka_filter:
+            df, excluded_count, excluded_samples = filter_to_osaka_municipalities(df)
+            if excluded_count > 0:
+                print(f"  ℹ️ 大阪府の市町村に該当しない{excluded_count}件を除外しました（他府県の混入データ）")
+                print(f"     除外した住所の例：{excluded_samples}")
+            print(f"  除外後：{len(df)}件を大阪府データとして採用します")
 
         records = []
         for _, row in df.iterrows():
@@ -360,21 +410,46 @@ def main():
             if updated:
                 cache_dirty = True
 
+        if pref_slug not in prefecture_records:
+            prefecture_records[pref_slug] = {"name": pref_name, "records": []}
+        prefecture_records[pref_slug]["records"].extend(records)
+
+    # スラッグ（都道府県）ごとにまとめて1つのJSONとして書き出す
+    for pref_slug, info in prefecture_records.items():
+        pref_name = info["name"]
+        records = info["records"]
+
+        # 事業所番号が重複している場合（同じ事業所が複数CSVに登場するケース）に備え、
+        # 先に登場したものを優先しつつ、重複を除いておく（データの二重表示を防ぐ）
+        seen_jigyosho_no = set()
+        deduped_records = []
+        duplicate_count = 0
+        for r in records:
+            if r["jigyosho_no"] and r["jigyosho_no"] in seen_jigyosho_no:
+                duplicate_count += 1
+                continue
+            if r["jigyosho_no"]:
+                seen_jigyosho_no.add(r["jigyosho_no"])
+            deduped_records.append(r)
+
+        if duplicate_count > 0:
+            print(f"  ℹ️ {pref_name}：事業所番号が重複していた{duplicate_count}件を除外しました")
+
         # 座標が取得できた件数を集計し、ビルドログで分かるようにしておく
-        geocoded_count = sum(1 for r in records if r["lat"] is not None)
+        geocoded_count = sum(1 for r in deduped_records if r["lat"] is not None)
 
         output_path = os.path.join(OUTPUT_DIR, f"data_{pref_slug}.json")
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(records, f, ensure_ascii=False, indent=2)
+            json.dump(deduped_records, f, ensure_ascii=False, indent=2)
 
         manifest["prefectures"][pref_slug] = {
             "name": pref_name,
-            "count": len(records),
+            "count": len(deduped_records),
             "geocoded_count": geocoded_count,
         }
-        manifest["total_count"] += len(records)
+        manifest["total_count"] += len(deduped_records)
 
-        print(f"  {pref_name}（{pref_slug}）：{len(records)}件（座標取得 {geocoded_count}件）→ {output_path}")
+        print(f"  {pref_name}（{pref_slug}）：合計{len(deduped_records)}件（座標取得 {geocoded_count}件）→ {output_path}")
 
     # ジオコーディングキャッシュは、新しい住所を1件でも問い合わせた場合のみ保存し直す
     if cache_dirty:
