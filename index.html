@@ -582,9 +582,9 @@ a{ color: var(--color-primary-dark); }
   let filteredSorted = [];
   let renderedCount = 0;
 
-  // 👑 現状は都道府県2件（大阪府・滋賀県）程度の小規模データのため、
+  // 👑 現状は大阪府のみの小規模データのため、
   // 「現在地・住所検索」時は全都道府県のデータをまとめて読み込む簡易方式にしている。
-  // 将来47都道府県規模までデータが増えた場合は、訪問看護ナビと同様に
+  // 将来複数の都道府県までデータが増えた場合は、訪問看護ナビと同様に
   // 都道府県ごとの遅延読み込み・近い都道府県だけ読み込む方式へ切り替えること。
   const prefectureDataCache = {};
 
@@ -850,14 +850,14 @@ a{ color: var(--color-primary-dark); }
     const telHtml = s.tel_clean
       ? `<a class="action-btn call" href="tel:${s.tel_clean}">📞 ${escapeHtml(s.tel)}</a>` : "";
 
-    const isAdded = candidates.some(c => c.jigyosho_no === s.jigyosho_no);
+    const isAdded = candidates.some(c => c.id === s.id);
     const candidateBtnHtml =
-      `<button class="action-btn candidate${isAdded ? " added" : ""}" onclick="window.__idoshien.toggleCandidate('${escapeAttr(s.jigyosho_no)}')">
+      `<button class="action-btn candidate${isAdded ? " added" : ""}" onclick="window.__idoshien.toggleCandidate('${escapeAttr(s.id)}')">
         ${isAdded ? "✓ 候補に追加済み" : "📋 候補に追加"}
       </button>`;
 
     return `
-      <div class="station-card ${cardClass}" onclick="window.__idoshien.recordViewed('${escapeAttr(s.jigyosho_no)}')">
+      <div class="station-card ${cardClass}" onclick="window.__idoshien.recordViewed('${escapeAttr(s.id)}')">
         <div class="card-top">
           <h3 class="card-name">${escapeHtml(s.name)}</h3>
           ${distanceHtml}
@@ -920,12 +920,12 @@ a{ color: var(--color-primary-dark); }
   function saveRecent(){ saveToStorage(RECENT_KEY, recentViewed); }
 
   // ---- 最後に見た事業所 ----
-  function recordViewed(jigyoshoNo){
-    const station = allStations.find(s => s.jigyosho_no === jigyoshoNo);
+  function recordViewed(id){
+    const station = allStations.find(s => s.id === id);
     if (!station) return;
-    recentViewed = recentViewed.filter(r => r.jigyosho_no !== jigyoshoNo);
+    recentViewed = recentViewed.filter(r => r.id !== id);
     recentViewed.unshift({
-      jigyosho_no: station.jigyosho_no, name: station.name, address: station.address,
+      id: station.id, jigyosho_no: station.jigyosho_no, name: station.name, address: station.address,
       tel: station.tel, tel_clean: station.tel_clean, viewedAt: new Date().toLocaleString("ja-JP"),
     });
     recentViewed = recentViewed.slice(0, RECENT_MAX);
@@ -948,15 +948,15 @@ a{ color: var(--color-primary-dark); }
   }
 
   // ---- 候補リスト ----
-  function toggleCandidate(jigyoshoNo){
-    const idx = candidates.findIndex(c => c.jigyosho_no === jigyoshoNo);
+  function toggleCandidate(id){
+    const idx = candidates.findIndex(c => c.id === id);
     if (idx >= 0){
       candidates.splice(idx, 1);
     } else {
-      const station = allStations.find(s => s.jigyosho_no === jigyoshoNo);
+      const station = allStations.find(s => s.id === id);
       if (!station) return;
       candidates.push({
-        jigyosho_no: station.jigyosho_no, name: station.name, address: station.address,
+        id: station.id, jigyosho_no: station.jigyosho_no, name: station.name, address: station.address,
         tel: station.tel, tel_clean: station.tel_clean, target_tags: station.target_tags,
         designated_date: station.designated_date,
         status: "unknown", statusUpdatedAt: "", clientLabel: "", memo: "",
@@ -969,8 +969,8 @@ a{ color: var(--color-primary-dark); }
     renderDrawerViews();
   }
 
-  function removeCandidate(jigyoshoNo){
-    candidates = candidates.filter(c => c.jigyosho_no !== jigyoshoNo);
+  function removeCandidate(id){
+    candidates = candidates.filter(c => c.id !== id);
     saveCandidates(); updateFabCount(); renderNextPage2(); renderDrawerViews();
   }
   function renderNextPage2(){
@@ -980,30 +980,30 @@ a{ color: var(--color-primary-dark); }
     renderNextPage();
   }
 
-  function setCandidateStatus(jigyoshoNo, status){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function setCandidateStatus(id, status){
+    const c = candidates.find(c => c.id === id);
     if (c){
       c.status = status;
       c.statusUpdatedAt = new Date().toLocaleString("ja-JP");
       saveCandidates(); renderDrawerViews();
     }
   }
-  function setCandidateClientLabel(jigyoshoNo, label){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function setCandidateClientLabel(id, label){
+    const c = candidates.find(c => c.id === id);
     if (c){ c.clientLabel = label; saveCandidates(); renderDrawerViews(); }
   }
-  function setCandidateMemo(jigyoshoNo, memo){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function setCandidateMemo(id, memo){
+    const c = candidates.find(c => c.id === id);
     if (c){ c.memo = memo; saveCandidates(); }
   }
-  function insertMemoTemplate(jigyoshoNo, template){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function insertMemoTemplate(id, template){
+    const c = candidates.find(c => c.id === id);
     if (!c) return;
     c.memo = (c.memo ? c.memo + "\n" : "") + template + " ";
     saveCandidates(); renderDrawerViews();
   }
-  function insertMemoTimestamp(jigyoshoNo){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function insertMemoTimestamp(id){
+    const c = candidates.find(c => c.id === id);
     if (!c) return;
     const now = new Date();
     const stamp = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")} - `;
@@ -1011,12 +1011,12 @@ a{ color: var(--color-primary-dark); }
     saveCandidates(); renderDrawerViews();
   }
 
-  function markAsReferred(jigyoshoNo){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function markAsReferred(id){
+    const c = candidates.find(c => c.id === id);
     if (!c) return;
     const clientLabel = window.prompt("どなたの候補として紹介しましたか？（任意・例：Aさん）", c.clientLabel || "") || "";
     referralHistory.unshift({
-      jigyosho_no: c.jigyosho_no, name: c.name, clientLabel,
+      id: c.id, jigyosho_no: c.jigyosho_no, name: c.name, clientLabel,
       referredAt: new Date().toLocaleString("ja-JP"),
     });
     saveHistory(); renderDrawerViews();
@@ -1072,11 +1072,11 @@ a{ color: var(--color-primary-dark); }
 
   function renderCandidateRow(c){
     const statusBtns = Object.keys(STATUS_LABELS).map(key =>
-      `<button class="status-btn ${c.status === key ? "active-" + key : ""}" onclick="window.__idoshien.setStatus('${escapeAttr(c.jigyosho_no)}','${key}')">${STATUS_LABELS[key]}</button>`
+      `<button class="status-btn ${c.status === key ? "active-" + key : ""}" onclick="window.__idoshien.setStatus('${escapeAttr(c.id)}','${key}')">${STATUS_LABELS[key]}</button>`
     ).join("");
 
     const templateBtns = MEMO_TEMPLATES.map(t =>
-      `<button class="template-btn" onclick="window.__idoshien.insertTemplate('${escapeAttr(c.jigyosho_no)}', '${escapeAttr(t)}')">${escapeHtml(t)}</button>`
+      `<button class="template-btn" onclick="window.__idoshien.insertTemplate('${escapeAttr(c.id)}', '${escapeAttr(t)}')">${escapeHtml(t)}</button>`
     ).join("");
 
     return `
@@ -1086,20 +1086,20 @@ a{ color: var(--color-primary-dark); }
         <div class="card-meta-line">対象：${tagLine(c.target_tags)}</div>
         <input type="text" class="client-label-input" placeholder="利用者名（任意・例：Aさん）"
           value="${escapeAttr(c.clientLabel || '')}"
-          onchange="window.__idoshien.setClientLabel('${escapeAttr(c.jigyosho_no)}', this.value)">
+          onchange="window.__idoshien.setClientLabel('${escapeAttr(c.id)}', this.value)">
         <div class="status-btns">${statusBtns}</div>
         ${c.statusUpdatedAt ? `<div class="status-updated-at">最終確認：${escapeHtml(c.statusUpdatedAt)}</div>` : ""}
         <div class="memo-template-row">${templateBtns}</div>
         <div class="memo-insert-row">
-          <button class="mini-btn" onclick="window.__idoshien.insertTimestamp('${escapeAttr(c.jigyosho_no)}')">⌚ 日時を挿入</button>
+          <button class="mini-btn" onclick="window.__idoshien.insertTimestamp('${escapeAttr(c.id)}')">⌚ 日時を挿入</button>
         </div>
         <textarea class="memo-textarea" placeholder="電話で聞いた内容を自由にメモ"
-          onchange="window.__idoshien.setMemo('${escapeAttr(c.jigyosho_no)}', this.value)">${escapeHtml(c.memo || '')}</textarea>
+          onchange="window.__idoshien.setMemo('${escapeAttr(c.id)}', this.value)">${escapeHtml(c.memo || '')}</textarea>
         <div class="candidate-row-actions">
           ${c.tel ? `<a class="mini-btn" href="tel:${c.tel_clean || ''}">📞 電話</a>` : ""}
-          <button class="mini-btn callmode" onclick="window.__idoshien.openCallmode('${escapeAttr(c.jigyosho_no)}')">📴 通話モード</button>
-          <button class="mini-btn referred" onclick="window.__idoshien.markReferred('${escapeAttr(c.jigyosho_no)}')">✅ 紹介済みにする</button>
-          <button class="mini-btn danger" onclick="window.__idoshien.removeCandidate('${escapeAttr(c.jigyosho_no)}')">🗑 削除</button>
+          <button class="mini-btn callmode" onclick="window.__idoshien.openCallmode('${escapeAttr(c.id)}')">📴 通話モード</button>
+          <button class="mini-btn referred" onclick="window.__idoshien.markReferred('${escapeAttr(c.id)}')">✅ 紹介済みにする</button>
+          <button class="mini-btn danger" onclick="window.__idoshien.removeCandidate('${escapeAttr(c.id)}')">🗑 削除</button>
         </div>
       </div>
     `;
@@ -1138,8 +1138,8 @@ a{ color: var(--color-primary-dark); }
 
   // ---- 通話モード（電話をかけながら見る、最小限の情報画面） ----
   const callmodeOverlay = document.getElementById("callmodeOverlay");
-  function openCallmode(jigyoshoNo){
-    const c = candidates.find(c => c.jigyosho_no === jigyoshoNo);
+  function openCallmode(id){
+    const c = candidates.find(c => c.id === id);
     if (!c) return;
     document.getElementById("callmodeName").textContent = c.name;
     const telEl = document.getElementById("callmodeTel");
@@ -1230,3 +1230,5 @@ a{ color: var(--color-primary-dark); }
 
 </body>
 </html>
+
+

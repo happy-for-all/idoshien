@@ -1,0 +1,49 @@
+name: Cleanup old archive files (monthly, automatic)
+
+# ============================================================
+# 🚌 archive/ フォルダの古いバックアップを月1回自動削除する
+#
+# 現時点（CSV・JSONを毎回上書きする運用）では archive/ フォルダ自体を
+# 使っていないため、このワークフローを実行しても削除対象のファイルは
+# ありません（安全に空振りします）。将来、日付付きバックアップを
+# 保管する運用に変更した場合に備えた安全弁です。
+# ============================================================
+on:
+  # 修正済み：以前の "0 15 1 * *"（UTC 15:00）は JST に変換すると
+  # 「2日 0:00」になってしまい、コメントの「1日 深夜」とずれていた
+  # （UTC→JSTは+9時間のため、1日15:00 UTC = 2日0:00 JST）。
+  # 日付のずれを避けるため、UTC 0:00（JST 9:00・1日の朝）に変更した。
+  schedule:
+    - cron: "0 0 1 * *"    # 毎月1日 朝9:00(JST)に自動実行
+  workflow_dispatch:        # 手動での即時実行もできるようにしておく
+
+# 修正済み：組織・リポジトリ側のデフォルト設定次第では GITHUB_TOKEN が
+# 読み取り専用になっており、後段の「git push」が権限エラーで失敗することがある。
+# 明示的に書き込み権限を付与し、設定に依存せず動くようにしておく。
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run cleanup script
+        run: python3 cleanup_old_archives.py
+
+      - name: Commit changes if any files were deleted
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: archive/内の古いバックアップを自動削除"
+          git push
+
+

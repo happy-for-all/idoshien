@@ -19,6 +19,7 @@ import re
 import json
 import time
 import shutil
+import hashlib
 import unicodedata
 import urllib.request
 import urllib.parse
@@ -323,10 +324,30 @@ def filter_to_osaka_municipalities(df):
 
 
 # ------------------------------------------------------------
+# 8-2. フロント側で使う「絶対に空にも重複にもならないID」を組み立てる
+#
+#    事業所番号（jigyosho_no）はほとんどの場合ユニークな公式番号だが、
+#    「将来別の都道府県のCSVを追加したときに、事業所番号が空欄の行が
+#    混ざっていたら？」という将来のデータ追加に備え、事業所番号だけに
+#    依存しない安全なID（id）を別途用意しておく。
+#    ・事業所番号があれば「スラッグ:事業所番号」
+#    ・無ければ「スラッグ:ファイル名:行番号」のハッシュ値
+#    フロント側（index.html）は、この id で候補リスト・閲覧履歴などの
+#    同一性判定を行う（事業所番号は表示用の情報としてのみ扱う）。
+# ------------------------------------------------------------
+def build_record_id(pref_slug, filename, row_index, jigyosho_no):
+    if jigyosho_no:
+        return f"{pref_slug}:{jigyosho_no}"
+    seed = f"{pref_slug}:{filename}:{row_index}"
+    return f"{pref_slug}:noid:" + hashlib.md5(seed.encode("utf-8")).hexdigest()[:12]
+
+
+# ------------------------------------------------------------
 # 8. 1事業所分のレコードを組み立てる
 # ------------------------------------------------------------
-def build_station_record(row, pref_name, cache):
+def build_station_record(row, pref_name, pref_slug, filename, row_index, cache):
     jigyosho_no = safe_str(row.get("事業所番号")) or ""
+    record_id = build_record_id(pref_slug, filename, row_index, jigyosho_no)
 
     tel_display, tel_clean = clean_phone(row.get("事業所電話番号"))
     fax_display, fax_clean = clean_phone(row.get("事業所FAX番号"))
@@ -340,6 +361,7 @@ def build_station_record(row, pref_name, cache):
     lat, lon, cache_updated = geocode_with_cache(full_address, cache)
 
     record = {
+        "id": record_id,
         "jigyosho_no": jigyosho_no,
         "name": safe_str(row.get("事業所名称")) or "",
         "corporation_name": safe_str(row.get("法人名称")) or "",
@@ -404,8 +426,8 @@ def main():
             print(f"  除外後：{len(df)}件を大阪府データとして採用します")
 
         records = []
-        for _, row in df.iterrows():
-            record, updated = build_station_record(row, pref_name, geocode_cache)
+        for row_index, row in df.iterrows():
+            record, updated = build_station_record(row, pref_name, pref_slug, filename, row_index, geocode_cache)
             records.append(record)
             if updated:
                 cache_dirty = True
@@ -483,3 +505,5 @@ def main():
 # ------------------------------------------------------------
 if __name__ == "__main__":
     main()
+
+

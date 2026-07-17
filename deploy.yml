@@ -1,0 +1,66 @@
+name: Deploy idoshien (manual trigger only)
+
+# ============================================================
+# 🚌 移動支援ナビ デプロイワークフロー
+#
+# 重要：このワークフローは push しても自動実行されません。
+# GitHubの「Actions」タブから「Run workflow」ボタンを押したときだけ
+# 実行される、完全手動トリガー方式です。
+# ============================================================
+on:
+  workflow_dispatch:
+
+# 修正済み：組織・リポジトリ側のデフォルト設定次第では GITHUB_TOKEN が
+# 読み取り専用になっており、後段の「git push」が権限エラーで失敗することがある。
+# 明示的に書き込み権限を付与し、設定に依存せず動くようにしておく。
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- 1. リポジトリの取得 ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- 2. Python環境のセットアップ ---
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install pandas
+
+      # --- 3. build.pyを実行してdist/を生成 ---
+      #     この中で国土地理院APIへのジオコーディング問い合わせも行われる
+      #     （geocode_cache.jsonに結果を保存するため、2回目以降は高速化される）
+      - name: Run build.py
+        run: python3 build.py
+
+      # --- 4. Node.js環境のセットアップ（wrangler実行のため） ---
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # --- 5. ジオコーディングキャッシュに変更があれば、リポジトリにコミットして保存する ---
+      #     （次回以降のビルドで同じ住所に再度APIを呼び出さないようにするため）
+      - name: Commit updated geocode cache if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add geocode_cache.json
+          git diff --staged --quiet || git commit -m "chore: ジオコーディングキャッシュを更新"
+          git push
+
+      # --- 6. Cloudflare Workersへデプロイ ---
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: "4"
+
+
