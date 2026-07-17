@@ -583,7 +583,7 @@ a{ color: var(--color-primary-dark); }
 
       const names = Object.values(manifestData.prefectures).map(p => p.name).join("・");
       document.getElementById("dataSourceNotice").textContent =
-        `※現在対応しているのは ${names} のみです。他の地域は準備が整い次第、順次追加予定です。`;
+        `※現在対応しているのは ${names} のみです。`;
 
       // 都道府県セレクトを、実際に読み込めるデータに合わせて動的に生成する
       const select = document.getElementById("prefSelect");
