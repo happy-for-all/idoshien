@@ -911,10 +911,22 @@ a{ color: var(--color-primary-dark); }
     catch(e){ console.warn(`localStorageの保存に失敗しました（${key}）`, e); }
   }
 
-  let candidates = loadFromStorage(CANDIDATES_KEY);
-  let referralHistory = loadFromStorage(HISTORY_KEY);
-  let recentViewed = loadFromStorage(RECENT_KEY);
+  // 👑 修正済み：以前（idを導入する前）に保存されたデータには「id」が無く
+  // 「jigyosho_no」だけを持っている。idだけで同一性判定する現在のコードでは
+  // 「id」が無いと削除・ステータス変更等が一切効かなくなってしまうため、
+  // 読み込み時に「id」が無ければ「jigyosho_no」から補完する（後方互換のための移行処理）。
+  function migrateMissingId(list){
+    list.forEach(item => {
+      if (!item.id && item.jigyosho_no){
+        item.id = `osaka:${item.jigyosho_no}`;
+      }
+    });
+    return list;
+  }
 
+  let candidates = migrateMissingId(loadFromStorage(CANDIDATES_KEY));
+  let referralHistory = migrateMissingId(loadFromStorage(HISTORY_KEY));
+  let recentViewed = migrateMissingId(loadFromStorage(RECENT_KEY));
   function saveCandidates(){ saveToStorage(CANDIDATES_KEY, candidates); }
   function saveHistory(){ saveToStorage(HISTORY_KEY, referralHistory); }
   function saveRecent(){ saveToStorage(RECENT_KEY, recentViewed); }
