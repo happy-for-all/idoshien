@@ -56,8 +56,10 @@ GEOCODE_CACHE_PATH = "geocode_cache.json"
 #    ことが実データ検証で判明したため、大阪府の正式な市町村名と照合し、
 #    該当しない行は自動的に除外する（3番目の True フラグで指定）。
 PREFECTURE_FILES = {
-    "2026_6_1-31.csv": ("大阪府", "osaka", False),
-    "2026_6_1-32.csv": ("大阪府", "osaka", True),
+    # 👑 更新（2026-11-07）：大阪市「大阪市登録移動支援事業所一覧」令和8年9月1日現在版
+    #    -31＝大阪市内の事業所、-32＝大阪市外の事業所（大阪市に登録しているもの）
+    "2026_9_1-31.csv": ("大阪府", "osaka", False),
+    "2026_9_1-32.csv": ("大阪府", "osaka", True),
 }
 
 # 大阪府の正式な市町村一覧（33市・9町・1村、計43市町村）。
@@ -83,7 +85,7 @@ GEOCODE_TIMEOUT_SECONDS = 10   # 修正済み：ネットワークアクセス�
 GEOCODE_WAIT_SECONDS = 0.3     # API側への負荷配慮（新規リクエスト時のみ待機する）
 
 # CSVの更新時点（ダウンロード元ページの表記に合わせて手動で更新してください）
-CSV_SOURCE_LABEL = "2026年6月時点（各都道府県公表の移動支援指定事業所一覧）"
+CSV_SOURCE_LABEL = "令和8年9月1日現在（大阪市「大阪市登録移動支援事業所一覧」）"
 
 
 # ------------------------------------------------------------
@@ -173,11 +175,21 @@ def parse_target_tags(row):
         text = safe_str(value)
         return text is not None and text != ""
 
+    # 👑 修正（2026-11-07）：令和8年9月1日現在版から、見出しが
+    #    「主たる対象者：障がい児」→「主たる対象者：障害児」に変わり、
+    #    列の並び（精神と障害児）も入れ替わった。列は見出しの文字で探すため
+    #    並び順は影響しないが、見出しの文字はどちらの書き方でも読めるようにする。
+    def first_present(*keys):
+        for key in keys:
+            if key in row.index:
+                return row.get(key)
+        return None
+
     return {
         "physical": is_marked(row.get("主たる対象者：身体")),
         "intellectual": is_marked(row.get("主たる対象者：知的")),
         "mental": is_marked(row.get("主たる対象者：精神")),
-        "child": is_marked(row.get("主たる対象者：障がい児")),
+        "child": is_marked(first_present("主たる対象者：障害児", "主たる対象者：障がい児")),
     }
 
 
@@ -417,6 +429,17 @@ def main():
 
         df = load_csv_with_encoding_fallback(csv_path)
         print(f"{pref_name}／{filename}：CSV読み込み完了（{len(df)}件）")
+
+        # 👑 安全確認（2026-11-07）：必要な見出しがそろっているかを確かめる。
+        #    大阪市の一覧は版によって見出しの文字が変わることがあるため、
+        #    見つからない場合は「対応なし」のまま公開してしまわないよう、ここでビルドを止める。
+        required_columns = ["事業所番号", "事業所名称", "事業所所在地",
+                            "主たる対象者：身体", "主たる対象者：知的", "主たる対象者：精神"]
+        missing_columns = [c for c in required_columns if c not in df.columns]
+        if not any(c in df.columns for c in ("主たる対象者：障害児", "主たる対象者：障がい児")):
+            missing_columns.append("主たる対象者：障害児（または 障がい児）")
+        if missing_columns:
+            raise RuntimeError(f"{filename} に必要な見出しが見つかりません：{missing_columns}")
 
         if needs_osaka_filter:
             df, excluded_count, excluded_samples = filter_to_osaka_municipalities(df)
